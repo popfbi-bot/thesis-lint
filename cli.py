@@ -41,7 +41,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_check.add_argument("--out", metavar="REPORT.md", help="同时输出 Markdown 报告")
     p_check.add_argument("--html", metavar="REPORT.html",
                          help="同时输出单文件 HTML 报告（内联 CSS，可离线打开、可直接截图）")
-    p_check.add_argument("--no-color", action="store_true", help="终端不着色")
+    p_check.add_argument("--no-color", action="store_true", help="终端不着色（也认 NO_COLOR 环境变量）")
+    p_check.add_argument("--color", action="store_true",
+                         help="强制着色（默认跟终端是否 tty 自动判断）")
 
     sub.add_parser("presets", help="列出可用 preset")
     return parser
@@ -76,7 +78,10 @@ def cmd_check(args) -> int:
         print(f"错误：{exc}", file=sys.stderr)
         return 2
 
-    sys.stdout.write(render_terminal(result, sys.stdout, color=not args.no_color) + "\n")
+    # 默认 color=None：交给 _supports_color() 按 isatty / NO_COLOR 判断，
+    # 不能写成 not args.no_color，那会强制着色、绕过 tty 判断。
+    color = True if args.color else (False if args.no_color else None)
+    sys.stdout.write(render_terminal(result, sys.stdout, color=color) + "\n")
 
     written = write_outputs(result, args.out, args.html)
     for path in written:

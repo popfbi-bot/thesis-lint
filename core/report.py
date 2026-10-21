@@ -66,6 +66,9 @@ _COLOR = {
     "cyan": "\033[36m",
 }
 
+# 级别 -> 着色键。只认常量，不留 "red"/"yellow" 这类别名，避免两套名字各写一半。
+_LEVEL_COLOR = {LEVEL_ERROR: LEVEL_ERROR, LEVEL_WARN: LEVEL_WARN}
+
 
 def _supports_color(stream) -> bool:
     if os.environ.get("NO_COLOR"):
@@ -100,7 +103,7 @@ def render_terminal(result: CheckResult, stream=None, color: bool | None = None)
     for level, items in result.grouped():
         head = f"{LEVEL_LABEL[level]}（{len(items)}）"
         key = "bold"
-        lines.append(c(head, key, "red" if level == LEVEL_ERROR else "yellow"))
+        lines.append(c(head, key, _LEVEL_COLOR[level]))
         by_rule: Dict[str, List[Issue]] = {}
         for it in items:
             by_rule.setdefault(it.rule_id, []).append(it)
@@ -115,7 +118,7 @@ def render_terminal(result: CheckResult, stream=None, color: bool | None = None)
         lines.append("")
 
     total = result.summary
-    lines.append(c(total, "red" if result.errors else "yellow"))
+    lines.append(c(total, LEVEL_ERROR if result.errors else LEVEL_WARN))
     return "\n".join(lines)
 
 
