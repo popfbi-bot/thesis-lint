@@ -1,0 +1,3 @@
+# thesis-lint 零第三方依赖，不需要 pip install。
+# 本文件存在只是为了提前回答「要不要装什么」：不用装。
+# 仅依赖 Python 3.10+ 标准库（zipfile / xml.etree.ElementTree / argparse / json）。
