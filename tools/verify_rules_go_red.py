@@ -58,8 +58,12 @@ def main() -> int:
 
     for rule, (rel_path, anchor) in RULES.items():
         path = ROOT / rel_path
-        original = path.read_text(encoding="utf-8")
-        if anchor not in original:
+        # 二进制读写：Windows 上 text 模式默认 newline=None，写回时会把 \n 转成 \r\n，
+        # 于是「恢复原文件」这一行反而把源码永久翻成了 CRLF（issue #6）。
+        # 用 bytes 读写，行尾一个字节都不动。
+        original = path.read_bytes()
+        text = original.decode("utf-8")
+        if anchor not in text:
             failures.append(f"{rule}: 锚点没找到（{rel_path} 结构变了？）")
             print(f"{rule:15s} -> SKIP（锚点没找到）")
             continue
@@ -72,12 +76,14 @@ def main() -> int:
             continue
 
         # 2) 让规则永远通过，测试必须变红，且失败原因必须是指定断言。
-        path.write_text(original.replace(anchor, anchor.replace("        return issues", "        return []", 1), 1), encoding="utf-8")
+        path.write_bytes(
+            text.replace(anchor, anchor.replace("        return issues", "        return []", 1), 1).encode("utf-8")
+        )
         try:
             proc = run_test(rule)
             output = _reason(proc)
         finally:
-            path.write_text(original, encoding="utf-8")
+            path.write_bytes(original)
 
         if proc.returncode == 0:
             failures.append(f"{rule}: 规则被改成永远通过后，测试仍然绿")
